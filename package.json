@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "run-weather": "node --experimental-modules --experimental-json-modules weatherCenter.mjs"
   },
   "author": "",
   "license": "ISC",
