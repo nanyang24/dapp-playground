@@ -1,0 +1,23 @@
+[
+  {
+    "inputs": [
+      { "internalType": "uint32", "name": "batchId", "type": "uint32" },
+      { "internalType": "bytes32", "name": "cityName", "type": "bytes32" }
+    ],
+    "name": "getWeather",
+    "outputs": [{ "internalType": "uint32", "name": "", "type": "uint32" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint32", "name": "batchId", "type": "uint32" },
+      { "internalType": "bytes32", "name": "cityName", "type": "bytes32" },
+      { "internalType": "uint32", "name": "temperature", "type": "uint32" }
+    ],
+    "name": "reportWeather",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]
