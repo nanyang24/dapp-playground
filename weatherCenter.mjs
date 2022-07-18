@@ -4,6 +4,7 @@ import HDWalletProvider from '@truffle/hdwallet-provider';
 import Web3 from 'web3';
 import { ethers } from 'ethers';
 import WeatherABI from './ABIs/Weather.json';
+import Multicall2ABI from './ABIs/Multicall2.json';
 import NetworkRPC from './NetworkRPC.js';
 
 dotenv.config();
@@ -26,7 +27,6 @@ const provider = new HDWalletProvider(
   `https://cronos-testnet-3.crypto.org:8545`
 );
 const web3 = new Web3(provider);
-const contract = new web3.eth.Contract(WeatherABI, WeatherCenter);
 
 const list = [
   {
@@ -72,6 +72,8 @@ function binaryToDecimal(binary) {
 const tempExtractRegex = /(\+|\-)(\d+)\.?(\d?) °C/;
 
 const reportWeather = async () => {
+  const contract = new web3.eth.Contract(WeatherABI, WeatherCenter);
+
   // the API go down
   // const [sh, hk, lon] = await Promise.all([
   //   fetch(CityAPI[Cities.SH]),
@@ -133,21 +135,12 @@ const reportWeather = async () => {
 function splitTempBinaryInThree(string) {
   const string1 = string.slice(0, 1);
   const string2 = string.slice(1, 8);
-  const string3 = string.slice(8, 16);
+  const string3 = string.slice(8, 15);
 
   return [string1, string2, string3];
 }
 
-// from record
-const batchId = 1658070913;
-const cityNameHex =
-  '0x686f6e676b6f6e67000000000000000000000000000000000000000000000000';
-
-const getWeather = async () => {
-  const temperature = await contract.methods
-    .getWeather(batchId, cityNameHex)
-    .call();
-
+async function extractTemp(temperature) {
   const [signBinary, integerBinary, floatBinary] = splitTempBinaryInThree(
     web3.utils.padLeft(decimalToBinary(temperature), 15)
   );
@@ -159,7 +152,57 @@ const getWeather = async () => {
   const number = +`${integer}.${float}`;
   const formattedTemp = `${sign}${number}°C`;
 
-  console.log('formattedTemp: ', formattedTemp)
+  console.log('formattedTemp: ', formattedTemp);
+}
+
+// from record
+const batchId = 1658070913;
+const CitiesNameList = [
+  '0x686f6e676b6f6e67000000000000000000000000000000000000000000000000',
+  '0x6c6f6e646f6e0000000000000000000000000000000000000000000000000000',
+  '0x7368616e67686169000000000000000000000000000000000000000000000000',
+];
+
+const Multicall2ContractAddress = '0x654dc44392C6Fe6ae739BDaB640F6C681785c726';
+
+const getWeather = async () => {
+  const multicallContract = new web3.eth.Contract(
+    Multicall2ABI,
+    Multicall2ContractAddress
+  );
+  const weatherContract = new web3.eth.Contract(WeatherABI, WeatherCenter);
+
+  const { returnData } = await multicallContract.methods
+    .aggregate([
+      [
+        WeatherCenter,
+        weatherContract.methods
+          .getWeather(batchId, CitiesNameList[0])
+          .encodeABI(),
+      ],
+      [
+        WeatherCenter,
+        weatherContract.methods
+          .getWeather(batchId, CitiesNameList[1])
+          .encodeABI(),
+      ],
+      [
+        WeatherCenter,
+        weatherContract.methods
+          .getWeather(batchId, CitiesNameList[2])
+          .encodeABI(),
+      ],
+    ])
+    .call();
+
+  const formattedTemp = returnData
+    .map((d) => parseInt(web3.eth.abi.decodeParameter('uint256', d)))
+    .map((n) => extractTemp(n));
+
+  // log:
+  // formattedTemp:  -12°C
+  // formattedTemp:  +27.4°C
+  // formattedTemp:  +100°C
 };
 
 // reportWeather();
