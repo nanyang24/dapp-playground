@@ -22,11 +22,19 @@ const CityAPI = {
 };
 
 const WeatherCenter = '0x49354813d8BFCa86f778DfF4120ad80E4D96D74E';
+const Multicall2 = '0x654dc44392C6Fe6ae739BDaB640F6C681785c726';
+
 const provider = new HDWalletProvider(
   process.env.PRIVATE_KEY,
   `https://cronos-testnet-3.crypto.org:8545`
 );
 const web3 = new Web3(provider);
+
+const weatherContract = new web3.eth.Contract(WeatherABI, WeatherCenter);
+const multicallContract = new web3.eth.Contract(
+  Multicall2ABI,
+  Multicall2
+);
 
 const list = [
   {
@@ -72,8 +80,6 @@ function binaryToDecimal(binary) {
 const tempExtractRegex = /(\+|\-)(\d+)\.?(\d?) °C/;
 
 const reportWeather = async () => {
-  const contract = new web3.eth.Contract(WeatherABI, WeatherCenter);
-
   // the API go down
   // const [sh, hk, lon] = await Promise.all([
   //   fetch(CityAPI[Cities.SH]),
@@ -91,7 +97,9 @@ const reportWeather = async () => {
 
   const batchId = parseInt(new Date().getTime() / 1000);
 
-  Object.keys(Cities).forEach(async (key) => {
+  const callDataList = [];
+
+  Object.keys(Cities).forEach((key) => {
     const cityNameHex = web3.utils.padRight(
       web3.utils.asciiToHex(Cities[key]),
       64
@@ -114,22 +122,24 @@ const reportWeather = async () => {
       signBinary + integerBinary + floatBinary
     );
 
-    const reportWeatherFunc = contract.methods.reportWeather(
-      batchId,
-      cityNameHex,
-      tempUint32
-    );
-
-    const options = {
-      from: '0x766De35346B6112Dc1aE559f60C0886e2A7ed5A5',
-      gasPrice: 2975536764061,
-    };
-
-    const gas = await reportWeatherFunc.estimateGas(options);
-    console.log('gas:', gas);
-
-    reportWeatherFunc.send(options);
+    callDataList.push([
+      WeatherCenter,
+      weatherContract.methods
+        .reportWeather(batchId, cityNameHex, tempUint32)
+        .encodeABI(),
+    ]);
   });
+
+  const multicallInstance = await multicallContract.methods.aggregate(
+    callDataList
+  );
+
+  const options = {
+    from: '0x766De35346B6112Dc1aE559f60C0886e2A7ed5A5',
+    gasPrice: 2975536764061,
+  };
+
+  multicallInstance.send(options);
 };
 
 function splitTempBinaryInThree(string) {
@@ -163,15 +173,7 @@ const CitiesNameList = [
   '0x7368616e67686169000000000000000000000000000000000000000000000000',
 ];
 
-const Multicall2ContractAddress = '0x654dc44392C6Fe6ae739BDaB640F6C681785c726';
-
 const getWeather = async () => {
-  const multicallContract = new web3.eth.Contract(
-    Multicall2ABI,
-    Multicall2ContractAddress
-  );
-  const weatherContract = new web3.eth.Contract(WeatherABI, WeatherCenter);
-
   const { returnData } = await multicallContract.methods
     .aggregate([
       [
