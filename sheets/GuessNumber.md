@@ -22,8 +22,8 @@ A:
 1. Since the player participates in the game through the `guess` method and passes the unhashed value, like `200`. Then the participating players can easily guess the same value directly afterwards to win the equal reward under the current game rules.
   - Improved solution: Modify the game rules where players' guessing cannot be duplicated; or the guessing uploaded by players need to be hashed.
 
-2. The current `reveal` function includes logic for calculating the recipients of the rewards and transferring the rewards to them. When a transfer fails at a certain address, it will lead to a bad situation
-  - Improved solution: Separate the logic of `reveal` to `reveal` and `withdraw` (only by the revealed rewarder).
+2. The current `reveal` function includes logic for calculating the recipients of the rewards and transferring the rewards to them. When a transfer fails at a certain address, it will lead to a bad situation; 
+  - Improved solution: Separate the logic of `reveal` to `reveal` and `withdraw` (only by the revealed rewarder). It also reduces the problems caused by the gas limit and avoids the inclusion of multiple Ether transfers in a single transaction.
   - Note that we should be careful with similarly important logic and add some guardian logic, such as Checks-Effects-Interaction / Mutex
   
 3. As the winning numbers are transparent to the host, theoretically it's possible for him to cheat and tell other players the numbers that can be awarded.
