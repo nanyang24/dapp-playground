@@ -15,7 +15,7 @@ A: Pls refer to contract file: [GuessNumber.sol](https://github.com/nanyang24/da
 
 
 ### Q: Explain the reason of having both `nonceHash` and `nonceNumHash` in the smart contract. Can any of these two be omitted and why?
-A: Since both state and data are visible on the blockchain, and the rules of the game specify the range of guesses. We don't only need `nonceNumHash` because the hacker will violently compute all hash values from 0 to 1000 to cheat. So we need a value that can't be violently calculated as no one knows what value the Host will set `nonce` with.
+A: We can omit `nonceHash` as `nonceNumHash` contains unknown `nonce` and `num` in a known range, so a hacker cannot guess to violently compute the result to cheat.
 
 ### Q: Try to find out any security loopholes in the above design and propose an improved solution.
 A:
