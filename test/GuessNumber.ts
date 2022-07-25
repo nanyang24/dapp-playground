@@ -21,7 +21,7 @@ describe('GuessNumber', function () {
     const [owner, accountA, accountB, accountC] = await ethers.getSigners();
 
     const GuessNumber = await ethers.getContractFactory('GuessNumber');
-    const guessNumber = await GuessNumber.deploy(nonceHash, nonceNumHash, {
+    const guessNumber = await GuessNumber.deploy(nonceHash, nonceNumHash, 4, {
       value: ONE_ETHER,
     });
 
@@ -65,7 +65,7 @@ describe('GuessNumber', function () {
     it('Should revert with the right error if wrong range', async function () {
       const {guessNumber} = await loadFixture(getGuessNumberFixture);
 
-      await expect(guessNumber.guess(1000)).to.be.revertedWith(
+      expect(guessNumber.guess(1000)).to.be.revertedWith(
         'The range of number should be [0, 1000)',
       );
     });
@@ -73,13 +73,13 @@ describe('GuessNumber', function () {
     it('Should revert with the right error if host is guessing', async function () {
       const {guessNumber, owner} = await loadFixture(getGuessNumberFixture);
 
-      await expect(guessNumber.connect(owner).guess(999)).to.be.revertedWith(`Host can't guess`);
+      expect(guessNumber.connect(owner).guess(999)).to.be.revertedWith(`Host can't guess`);
     });
 
     it('Should attach the same Ether Value as the Host deposited', async function () {
       const {guessNumber, accountA} = await loadFixture(getGuessNumberFixture);
 
-      await expect(
+      expect(
         guessNumber.connect(accountA).guess(200, {value: utils.parseEther('0.5')}),
       ).to.be.revertedWith('need to attach the same Ether Value as the Host deposited');
     });
@@ -93,6 +93,19 @@ describe('GuessNumber', function () {
 
       expect(await ethers.provider.getBalance(guessNumber.address)).to.equal(utils.parseEther('3'));
     });
+
+    it('Should revert with the right error if exceeding the player limit', async function () {
+      const [accountA, accountB] = await ethers.getSigners();
+      const GuessNumber = await ethers.getContractFactory('GuessNumber');
+      const guessNumber = await GuessNumber.deploy(nonceHash, nonceNumHash, 1, {
+        value: ONE_ETHER,
+      });
+
+      await expect(guessNumber.connect(accountA).guess(200, {value: ONE_ETHER}));
+      expect(guessNumber.connect(accountB).guess(300, {value: ONE_ETHER})).to.be.revertedWith(
+        `Already the maximum number of players`,
+      );
+    });
   });
 
   describe('Reveal', () => {
@@ -101,7 +114,7 @@ describe('GuessNumber', function () {
 
       await expect(guessNumber.connect(accountA).guess(200, {value: ONE_ETHER}));
 
-      await expect(
+      expect(
         guessNumber.connect(accountA).reveal(utils.formatBytes32String(nonce), number),
       ).to.be.revertedWith('Only the owner can operate');
     });
@@ -109,7 +122,7 @@ describe('GuessNumber', function () {
     it('Should revert if no one has participated in the betting yet', async function () {
       const {guessNumber, owner} = await loadFixture(getGuessNumberFixture);
 
-      await expect(
+      expect(
         guessNumber.connect(owner).reveal(utils.formatBytes32String(nonce), number),
       ).to.be.revertedWith('Not a good time, ser');
     });
@@ -119,7 +132,7 @@ describe('GuessNumber', function () {
 
       await expect(guessNumber.connect(accountA).guess(200, {value: ONE_ETHER}));
 
-      await expect(
+      expect(
         guessNumber.connect(owner).reveal(utils.formatBytes32String('NOT_NONCE'), number),
       ).to.be.revertedWith('Nonce should be derived by nonceHash');
     });
@@ -129,7 +142,7 @@ describe('GuessNumber', function () {
 
       await expect(guessNumber.connect(accountA).guess(200, {value: ONE_ETHER}));
 
-      await expect(
+      expect(
         guessNumber.connect(owner).reveal(utils.formatBytes32String(nonce), 123),
       ).to.be.revertedWith('Nonce should be derived by nonceNumHash');
     });
@@ -201,7 +214,7 @@ describe('GuessNumber', function () {
       );
       const [owner, accountA, accountB] = await ethers.getSigners();
       const GuessNumber = await ethers.getContractFactory('GuessNumber');
-      const guessNumber = await GuessNumber.deploy(nonceHash, nonceNumHash, {
+      const guessNumber = await GuessNumber.deploy(nonceHash, nonceNumHash, 4, {
         value: ONE_ETHER,
       });
 

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-import "hardhat/console.sol";
-
 library SafeMath {
     function subAbs(uint16 a, uint16 b) internal pure returns (uint16) {
         return a >= b ? a - b : b - a;
@@ -24,6 +22,7 @@ contract GuessNumber {
 
     State public state;
     uint256 public bet;
+    uint8 public playersLimit;
 
     bytes32 public nonceHash;
     bytes32 public nonceNumHash;
@@ -61,11 +60,16 @@ contract GuessNumber {
         _;
     }
 
-    constructor(bytes32 _nonceHash, bytes32 _nonceNumHash) payable {
+    constructor(
+        bytes32 _nonceHash,
+        bytes32 _nonceNumHash,
+        uint8 _playersLimit
+    ) payable {
         require(msg.value > 0);
 
         host = msg.sender;
         bet = msg.value;
+        playersLimit = _playersLimit;
 
         emit GameStarted(bet, _nonceHash, _nonceNumHash);
 
@@ -89,6 +93,7 @@ contract GuessNumber {
             state == State.WAITING_RESULT || state == State.WAITING_GUESS,
             "Not a good time, ser"
         );
+        require(playersLimit > playersAddress.length, "Already the maximum number of players");
 
         playersAddress.push(payable(msg.sender));
         // for less gas
