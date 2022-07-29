@@ -13,7 +13,7 @@ const Bet = ethers.utils.parseEther('0.1');
 
 async function main() {
   const GuessNumber = await ethers.getContractFactory('GuessNumber');
-  const guessNumber = await GuessNumber.deploy(nonceHash, nonceNumHash, {
+  const guessNumber = await GuessNumber.deploy(nonceHash, nonceNumHash, 4, {
     value: Bet,
   });
 
